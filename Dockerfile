@@ -1,27 +1,26 @@
-# Use the official .NET 8 SDK image for building
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /source
+WORKDIR /src
 
-# Copy csproj and restore dependencies
-COPY AdminServerStub/*.csproj ./AdminServerStub/
-RUN dotnet restore ./AdminServerStub/AdminServerStub.csproj
+# Copy solution and restore
+COPY AdminServer.sln ./
+COPY AdminServerStub/AdminServerStub.csproj AdminServerStub/
+COPY AdminServerStub.Tests/AdminServerStub.Tests.csproj AdminServerStub.Tests/
+RUN dotnet restore AdminServerStub/AdminServerStub.csproj
 
-# Copy everything else and build
-COPY AdminServerStub/. ./AdminServerStub/
-WORKDIR /source/AdminServerStub
-RUN dotnet publish -c Release -o /app --no-restore
+# Copy everything and build
+COPY . ./
+RUN dotnet publish AdminServerStub/AdminServerStub.csproj -c Release -o /app/publish /p:UseAppHost=false
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /app .
+COPY --from=build /app/publish .
 
-# Expose port (Railway will set the PORT environment variable)
+# Railway provides PORT env var; Program.cs already uses it and binds 0.0.0.0
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
+
+# Default port (Railway will set PORT at runtime)
 EXPOSE 5030
 
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:5030
-ENV ASPNETCORE_ENVIRONMENT=Production
-
-# Run the application
 ENTRYPOINT ["dotnet", "AdminServerStub.dll"]

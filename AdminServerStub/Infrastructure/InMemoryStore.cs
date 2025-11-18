@@ -12,12 +12,48 @@ namespace AdminServerStub.Infrastructure
         public static ConcurrentDictionary<string, ConcurrentQueue<CommandRequest>> PendingCommands { get; } = new();
         public static ConcurrentDictionary<string, CommandResponse> CommandResults { get; } = new();
         public static ConcurrentDictionary<string, object> EnhancedData { get; } = new();
-        public static ConcurrentDictionary<string, List<object>> NetworkPorts { get; } = new();
+        public static ConcurrentDictionary<string, NetworkPortSnapshot> LatestNetworkPortSnapshots { get; } = new();
+        public static ConcurrentDictionary<string, ConcurrentQueue<NetworkPortSnapshot>> NetworkPortHistory { get; } = new();
         public static ConcurrentDictionary<string, List<object>> InstalledSoftware { get; } = new();
 
         public static AgentIdentity GetOrAddAgent(string agentId)
         {
             return Agents.GetOrAdd(agentId, id => new AgentIdentity { Id = id, LastHeartbeat = DateTime.UtcNow });
+        }
+
+        private const int MaxSnapshotsPerAgent = 50;
+
+        public static NetworkPortSnapshot SaveNetworkPortSnapshot(NetworkPortSnapshot snapshot)
+        {
+            LatestNetworkPortSnapshots.AddOrUpdate(snapshot.AgentId, snapshot,
+                (_, existing) => snapshot.Timestamp >= existing.Timestamp ? snapshot : existing);
+
+            var history = NetworkPortHistory.GetOrAdd(snapshot.AgentId, _ => new ConcurrentQueue<NetworkPortSnapshot>());
+            history.Enqueue(snapshot);
+
+            while (history.Count > MaxSnapshotsPerAgent && history.TryDequeue(out _))
+            {
+                // Trim oldest snapshots to prevent unbounded growth
+            }
+
+            return snapshot;
+        }
+
+        public static NetworkPortSnapshot? GetLatestNetworkPortSnapshot(string agentId)
+        {
+            return LatestNetworkPortSnapshots.TryGetValue(agentId, out var snapshot) ? snapshot : null;
+        }
+
+        public static IReadOnlyCollection<NetworkPortSnapshot> GetNetworkPortSnapshots(string agentId)
+        {
+            if (NetworkPortHistory.TryGetValue(agentId, out var history))
+            {
+                var items = history.ToArray();
+                Array.Sort(items, (a, b) => b.Timestamp.CompareTo(a.Timestamp));
+                return items;
+            }
+
+            return Array.Empty<NetworkPortSnapshot>();
         }
 
         /// <summary>

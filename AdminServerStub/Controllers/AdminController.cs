@@ -57,5 +57,60 @@ namespace AdminServerStub.Controllers
         {
             return Ok(new { agentId, points = new object[0] });
         }
+
+        [HttpGet("agents/{agentId}/ports")]
+        public ActionResult<IEnumerable<NetworkPortSnapshot>> GetAgentPorts(string agentId)
+        {
+            var snapshots = InMemoryStore.GetNetworkPortSnapshots(agentId);
+            if (snapshots.Count == 0)
+                return Ok(Array.Empty<NetworkPortSnapshot>());
+            return Ok(snapshots);
+        }
+
+        [HttpGet("agents/{agentId}/ports/latest")]
+        public ActionResult<NetworkPortSnapshot> GetAgentPortsLatest(string agentId)
+        {
+            var snapshot = InMemoryStore.GetLatestNetworkPortSnapshot(agentId);
+            if (snapshot == null)
+                return NotFound();
+            return Ok(snapshot);
+        }
+
+        [HttpGet("ports")]
+        public ActionResult<object> GetAllAgentPorts()
+        {
+            // Return latest port information for all agents
+            var allPorts = InMemoryStore.LatestNetworkPortSnapshots.Values
+                .GroupBy(s => s.AgentId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => new
+                    {
+                        agentId = group.Key,
+                        snapshot = group.OrderByDescending(s => s.Timestamp).FirstOrDefault()
+                    });
+
+            return Ok(allPorts);
+        }
+
+        [HttpGet("ports/summary")]
+        public ActionResult<object> GetAllAgentPortsSummary()
+        {
+            // Return summary of port information for all agents with agent details
+            var summary = InMemoryStore.Agents.Values.Select(agent =>
+            {
+                var latestSnapshot = InMemoryStore.GetLatestNetworkPortSnapshot(agent.Id);
+                return new
+                {
+                    agentId = agent.Id,
+                    machineName = agent.MachineName,
+                    ipAddress = agent.IpAddress,
+                    portCount = latestSnapshot?.Connections.Count ?? 0,
+                    connections = latestSnapshot?.Connections ?? new List<NetworkPortConnection>()
+                };
+            }).ToList();
+
+            return Ok(summary);
+        }
     }
 }

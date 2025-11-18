@@ -37,27 +37,27 @@ namespace AdminServerStub.Models
 
     public class CommandRequest
     {
-        public required string CommandId { get; set; }
-        public required string TargetAgentId { get; set; }
-        public int CommandType { get; set; }
-        public Dictionary<string, string> Parameters { get; set; } = new();
-        public DateTime Timestamp { get; set; }
-        public int Priority { get; set; }
-        public int TimeoutSeconds { get; set; }
-        public bool RequireConfirmation { get; set; }
+        [JsonPropertyName("commandId")] public required string CommandId { get; set; }
+        [JsonPropertyName("targetAgentId")] public required string TargetAgentId { get; set; }
+        [JsonPropertyName("commandType")] public string CommandType { get; set; } = string.Empty;
+        [JsonPropertyName("parameters")] public Dictionary<string, string> Parameters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        [JsonPropertyName("timestamp")] public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        [JsonPropertyName("priority")] public int Priority { get; set; }
+        [JsonPropertyName("timeoutSeconds")] public int TimeoutSeconds { get; set; }
+        [JsonPropertyName("requireConfirmation")] public bool RequireConfirmation { get; set; }
     }
 
     public class CommandResponse
     {
-        public required string CommandId { get; set; }
-        public required string AgentId { get; set; }
-        public string Status { get; set; } = "Completed";
-        public DateTime StartTime { get; set; } = DateTime.UtcNow;
-        public DateTime EndTime { get; set; } = DateTime.UtcNow;
-        public long ExecutionTimeMs { get; set; }
-        public required string Output { get; set; }
-        public required string ErrorOutput { get; set; }
-        public int ExitCode { get; set; } = 0;
+        [JsonPropertyName("commandId")] public required string CommandId { get; set; }
+        [JsonPropertyName("agentId")] public required string AgentId { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = "Completed";
+        [JsonPropertyName("startTime")] public DateTime StartTime { get; set; } = DateTime.UtcNow;
+        [JsonPropertyName("endTime")] public DateTime EndTime { get; set; } = DateTime.UtcNow;
+        [JsonPropertyName("executionTimeMs")] public long ExecutionTimeMs { get; set; }
+        [JsonPropertyName("output")] public string Output { get; set; } = string.Empty;
+        [JsonPropertyName("errorOutput")] public string ErrorOutput { get; set; } = string.Empty;
+        [JsonPropertyName("exitCode")] public int ExitCode { get; set; } = 0;
     }
 
     public class InstalledSoftwareData
@@ -80,9 +80,29 @@ namespace AdminServerStub.Models
         [JsonPropertyName("softwareList")] public List<object> SoftwareList { get; set; } = new();
     }
 
+    public class NetworkPortConnection
+    {
+        [JsonPropertyName("localEndpoint")] public string? LocalEndpoint { get; set; }
+        [JsonPropertyName("remoteEndpoint")] public string? RemoteEndpoint { get; set; }
+        [JsonPropertyName("localPort")] public int? LocalPort { get; set; }
+        [JsonPropertyName("remotePort")] public int? RemotePort { get; set; }
+        [JsonPropertyName("processId")] public int? ProcessId { get; set; }
+        [JsonPropertyName("processName")] public string? ProcessName { get; set; }
+        [JsonPropertyName("state")] public string? State { get; set; }
+        [JsonPropertyName("protocol")] public string? Protocol { get; set; }
+    }
+
     public class NetworkPortData
     {
-        public required string AgentId { get; set; }
-        public List<object> Connections { get; set; } = new();
+        [JsonPropertyName("agentId")] public required string AgentId { get; set; }
+        [JsonPropertyName("timestamp")] public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        [JsonPropertyName("connections")] public List<NetworkPortConnection> Connections { get; set; } = new();
+    }
+
+    public class NetworkPortSnapshot
+    {
+        [JsonPropertyName("agentId")] public required string AgentId { get; set; }
+        [JsonPropertyName("timestamp")] public DateTime Timestamp { get; set; }
+        [JsonPropertyName("connections")] public List<NetworkPortConnection> Connections { get; set; } = new();
     }
 }
