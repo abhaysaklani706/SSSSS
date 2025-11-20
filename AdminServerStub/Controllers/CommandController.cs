@@ -138,7 +138,12 @@ namespace AdminServerStub.Controllers
                 return BadRequest("agentId required");
             }
 
-            response.Status = string.IsNullOrWhiteSpace(response.Status) ? "Completed" : response.Status;
+            if (string.IsNullOrWhiteSpace(response.Status))
+            {
+                // Derive status from exit code when not explicitly provided by the agent
+                response.Status = response.ExitCode == 0 ? "Completed" : "Failed";
+            }
+
             var endTime = response.EndTime == default ? DateTime.UtcNow : response.EndTime.ToUniversalTime();
             var startTime = response.StartTime == default ? endTime : response.StartTime.ToUniversalTime();
             response.StartTime = startTime;
