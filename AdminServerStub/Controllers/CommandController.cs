@@ -84,6 +84,28 @@ namespace AdminServerStub.Controllers
                 string.IsNullOrWhiteSpace(command.CommandType) ? "(unspecified)" : command.CommandType,
                 command.TargetAgentId);
 
+            // Additional debug logging for logical port management commands
+            var ct = command.CommandType;
+            if (!string.IsNullOrWhiteSpace(ct) &&
+                (string.Equals(ct, "OpenPort", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(ct, "ClosePort", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    var paramSummary = command.Parameters != null && command.Parameters.Count > 0
+                        ? string.Join(", ", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"))
+                        : "(no parameters)";
+                    _logger.LogInformation("Port command {CommandId} ({CommandType}) parameters: {Parameters}",
+                        command.CommandId,
+                        ct,
+                        paramSummary);
+                }
+                catch
+                {
+                    // Best-effort logging only
+                }
+            }
+
             return Ok(new { commandId = command.CommandId });
         }
 
